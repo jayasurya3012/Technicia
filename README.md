@@ -27,7 +27,7 @@ A Next.js application that allows you to chat with historical figures using AI. 
 1. **Clone the repository**
    ```bash
    git clone https://github.com/jayasurya3012/Technicia.git
-   cd Technicia/chronos-guru
+   cd Technicia/
    ```
 
 2. **Install dependencies**
@@ -68,7 +68,7 @@ A Next.js application that allows you to chat with historical figures using AI. 
 ## Project Structure
 
 ```
-chronos-guru/
+Technicia/
 ├── app/                    # Next.js app directory
 │   ├── api/               # API routes
 │   │   ├── chat/          # Chat endpoint
