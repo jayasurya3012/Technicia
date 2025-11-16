@@ -27,7 +27,7 @@ A Next.js application that allows you to chat with historical figures using AI. 
 1. **Clone the repository**
    ```bash
    git clone https://github.com/jayasurya3012/Technicia.git
-   cd Technicia/
+   cd Technicia/chronos-guru
    ```
 
 2. **Install dependencies**
@@ -68,7 +68,7 @@ A Next.js application that allows you to chat with historical figures using AI. 
 ## Project Structure
 
 ```
-Technicia/
+chronos-guru/
 ├── app/                    # Next.js app directory
 │   ├── api/               # API routes
 │   │   ├── chat/          # Chat endpoint
@@ -147,6 +147,14 @@ This project is configured for Vercel deployment:
 
 <img width="1903" height="907" alt="Screenshot 2025-11-16 091218" src="https://github.com/user-attachments/assets/3d726f09-003d-417e-823f-30ce035f32d0" />
 
+# Voice of John F. Kennedy for the above messages:
+
+Introduction:
+[voice_John_F_Kennedy_1.wav](https://github.com/user-attachments/files/23569314/voice_John_F_Kennedy_1.wav)
+
+Achievements:
+
+[voice_John_F_Kennedy_2.wav](https://github.com/user-attachments/files/23569319/voice_John_F_Kennedy_2.wav)
 
 ## License
 
