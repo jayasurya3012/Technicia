@@ -35,7 +35,7 @@ OUTPUT_DIR = Path("./audio_outputs")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
 # Base voice reference (John F. Kennedy)
-JFK_VOICE = "./jfk.wav"  # Your JFK voice sample
+JFK_VOICE = "./kenny.wav"  # Your JFK voice sample
 
 # Dictionary mapping figure names to their reference audio files or pitch shift parameters
 # If a voice file doesn't exist, we'll use JFK's voice with pitch shifting
@@ -69,6 +69,9 @@ def pitch_shift_audio(audio_path: str, semitones: float) -> str:
     if len(audio_data.shape) > 1:
         audio_data = np.mean(audio_data, axis=1)
 
+    # Ensure we're working with float32
+    audio_data = audio_data.astype(np.float32)
+
     # Calculate the shift factor
     shift_factor = 2 ** (semitones / 12.0)
 
@@ -82,12 +85,17 @@ def pitch_shift_audio(audio_path: str, semitones: float) -> str:
     # Resample back to original length to maintain duration
     final_audio = signal.resample(shifted_audio, len(audio_data))
 
-    # Normalize
-    final_audio = final_audio / np.max(np.abs(final_audio))
+    # Normalize to prevent clipping
+    max_val = np.max(np.abs(final_audio))
+    if max_val > 0:
+        final_audio = final_audio / max_val * 0.95  # Leave some headroom
 
-    # Save to temporary file
-    temp_path = audio_path.replace(".wav", f"_shifted_{semitones}.wav")
-    sf.write(temp_path, final_audio, sample_rate)
+    # Ensure the output is float32 and in the range [-1, 1]
+    final_audio = np.clip(final_audio, -1.0, 1.0).astype(np.float32)
+
+    # Save to temporary file with same sample rate as original
+    temp_path = audio_path.replace(".wav", f"_shifted_{int(semitones)}.wav")
+    sf.write(temp_path, final_audio, sample_rate, subtype='PCM_16')
 
     return temp_path
 
@@ -115,18 +123,17 @@ def preload_all():
     else:
         print("\n🎨 Reusing cached Bark style reference.")
 
-    # Auto-detect GPU
-    use_gpu = torch.cuda.is_available()
-    gpu_name = torch.cuda.get_device_name(0) if use_gpu else "None"
-    print(f"\n🖥️  GPU Detection:")
-    print(f"   - GPU Available: {use_gpu}")
-    print(f"   - GPU Name: {gpu_name}")
+    # Force CPU mode to avoid CUDA errors with pitch-shifted audio
+    use_gpu = False  # Disabled due to CUDA compatibility issues with pitch shifting
+    print(f"\n🖥️  GPU Mode:")
+    print(f"   - Using: CPU (forced - GPU disabled due to pitch shift compatibility)")
+    print(f"   - Note: GPU mode causes 'CUDA device-side assert' errors with pitch-shifted audio")
 
-    print(f"\n⏳ Initializing Coqui-XTTS (GPU = {use_gpu})...")
+    print(f"\n⏳ Initializing Coqui-XTTS (CPU mode)...")
     tts = TTS(
         model_name="tts_models/multilingual/multi-dataset/xtts_v2",
         progress_bar=False,
-        gpu=use_gpu
+        gpu=False  # Force CPU mode
     )
 
     # Pre-set style configuration
@@ -274,6 +281,22 @@ def generate_audio_endpoint(
                 print(f"✅ Pitch shift applied: {reference_audio}")
         else:
             print(f"🎤 Using voice reference: {reference_audio}")
+
+        # Validate audio file
+        try:
+            audio_data, sr = sf.read(reference_audio)
+            duration = len(audio_data) / sr
+            print(f"📊 Audio file info:")
+            print(f"   - Duration: {duration:.2f} seconds")
+            print(f"   - Sample rate: {sr} Hz")
+            print(f"   - Channels: {'Stereo' if len(audio_data.shape) > 1 else 'Mono'}")
+
+            if duration < 6:
+                print(f"⚠️  WARNING: Audio is only {duration:.2f} seconds!")
+                print(f"   XTTS works best with 10-15+ seconds of audio")
+                print(f"   Short audio may cause 'index out of range' errors")
+        except Exception as e:
+            print(f"⚠️  Could not validate audio file: {e}")
 
         # Create a unique filename based on text hash and speaker
         text_hash = hashlib.md5(f"{speaker}:{cleaned_text}".encode()).hexdigest()[:8]
