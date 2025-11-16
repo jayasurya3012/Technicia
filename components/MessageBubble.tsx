@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { generateVoiceAudio, playAudio, cleanTextForTTS } from "@/lib/voiceCloning";
 
 interface Message {
   role: "user" | "assistant";
@@ -69,41 +70,59 @@ function formatText(text: string, isStreaming: boolean = false): string {
 
 export default function MessageBubble({ message, figureName, isStreaming = false }: MessageBubbleProps) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const handleReadAloud = () => {
+  const handleReadAloud = async () => {
     if (isPlaying) {
-      window.speechSynthesis.cancel();
+      // Stop current playback
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current = null;
+      }
       setIsPlaying(false);
-    } else {
-      let textForSpeech = message.content;
-      
-      // Remove markdown bold markers
-      textForSpeech = textForSpeech.replace(/\*\*/g, "");
-      
-      // Remove bracketed sounds like [laughter], [sighs] for TTS (they're visual indicators)
-      textForSpeech = textForSpeech.replace(/\[[^\]]+\]/g, "");
-      
-      // Handle hesitations: replace em dashes and ellipses with pauses
-      // Em dash (—) - add a longer pause by inserting a comma and space
-      textForSpeech = textForSpeech.replace(/—/g, ", ");
-      // Ellipses (...) - add a pause
-      textForSpeech = textForSpeech.replace(/\.\.\./g, "... ");
-      
-      // Handle song symbol (♪) - remove it or replace with "sings:"
-      textForSpeech = textForSpeech.replace(/♪/g, "");
-      
-      // Capitalization emphasis is kept - TTS will naturally emphasize capitalized words
-      
-      const utterance = new SpeechSynthesisUtterance(textForSpeech);
-      utterance.onend = () => setIsPlaying(false);
-      utterance.onerror = () => setIsPlaying(false);
-      
-      // TODO: Replace with custom TTS server when available
-      // const voiceModel = getVoiceModelForFigure(figureName);
-      // await fetch(TTS_SERVER_URL, { ... });
-      
-      window.speechSynthesis.speak(utterance);
+      return;
+    }
+
+    if (!figureName) {
+      console.error("[MessageBubble] No figure name provided");
+      return;
+    }
+
+    try {
+      setIsGenerating(true);
+
+      // Always use custom voice cloning server
+      console.log(`[MessageBubble] Generating voice-cloned audio for ${figureName}`);
+
+      const cleanedText = cleanTextForTTS(message.content);
+
+      const result = await generateVoiceAudio({
+        text: cleanedText,
+        speaker: figureName,
+      });
+
+      if (!result.success || !result.audioBlob) {
+        throw new Error(result.error || "Failed to generate audio");
+      }
+
+      console.log(`[MessageBubble] Audio generated successfully. Generation time: ${result.generationTime}s`);
+
+      // Play the generated audio
       setIsPlaying(true);
+      setIsGenerating(false);
+
+      await playAudio(result.audioBlob);
+      setIsPlaying(false);
+
+    } catch (error) {
+      console.error("[MessageBubble] Error playing audio:", error);
+      setIsPlaying(false);
+      setIsGenerating(false);
+
+      // Show error to user
+      alert("Failed to play audio. Make sure the voice server is running on localhost:8000");
     }
   };
 
@@ -111,6 +130,10 @@ export default function MessageBubble({ message, figureName, isStreaming = false
   useEffect(() => {
     return () => {
       if (isPlaying) {
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current = null;
+        }
         window.speechSynthesis.cancel();
       }
     };
@@ -159,9 +182,10 @@ export default function MessageBubble({ message, figureName, isStreaming = false
         {isAssistant && !isStreaming && (
           <button
             onClick={handleReadAloud}
-            className="mt-3 text-sm text-primary/70 hover:text-primary flex items-center gap-1 transition-colors"
+            disabled={isGenerating}
+            className="mt-3 text-sm text-primary/70 hover:text-primary flex items-center gap-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            🔊 {isPlaying ? "Stop" : "Read aloud"}
+            {isGenerating ? "⏳ Generating..." : isPlaying ? "⏸️ Stop" : "🔊 Read aloud"}
           </button>
         )}
       </div>

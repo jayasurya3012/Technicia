@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import MessageBubble from "@/components/MessageBubble";
 import VoiceInput from "@/components/VoiceInput";
 import FigureImage from "@/components/FigureImage";
+import { generateVoiceAudio, playAudio, cleanTextForTTS } from "@/lib/voiceCloning";
 
 interface Message {
   role: "user" | "assistant";
@@ -27,7 +28,7 @@ export default function ChatPage() {
   const streamingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const wordBufferRef = useRef<string>("");
   const displayedTextRef = useRef<string>("");
-  const currentUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Word-by-word streaming with natural speech timing
   const streamWordsWithTiming = (
@@ -116,20 +117,19 @@ export default function ChatPage() {
 
   // Cleanup conversation - stops TTS, streaming, and resets state
   const cleanupConversation = () => {
-    // Cancel TTS
-    if (currentUtteranceRef.current) {
-      window.speechSynthesis.cancel();
-      currentUtteranceRef.current = null;
+    // Stop voice-cloned audio
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current.currentTime = 0;
+      currentAudioRef.current = null;
     }
-    // Ensure all speech is stopped
-    window.speechSynthesis.cancel();
-    
+
     // Clear streaming
     if (streamingTimeoutRef.current) {
       clearTimeout(streamingTimeoutRef.current);
       streamingTimeoutRef.current = null;
     }
-    
+
     // Reset state
     setIsTTSPlaying(false);
     wordBufferRef.current = "";
@@ -137,51 +137,41 @@ export default function ChatPage() {
     setStreamingMessage("");
   };
 
-  // TTS Helper Function
-  const speakText = (text: string): Promise<void> => {
-    return new Promise((resolve) => {
-      // Cancel any current speech
-      if (currentUtteranceRef.current) {
-        window.speechSynthesis.cancel();
+  // TTS Helper Function - Always uses voice cloning server
+  const speakText = async (text: string): Promise<void> => {
+    try {
+      // Use custom voice cloning server
+      console.log(`[ChatPage] Generating voice-cloned audio for ${figureName}`);
+
+      // Cancel any current audio playback
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
       }
 
-      let textForSpeech = text;
-      
-      // Remove markdown bold markers
-      textForSpeech = textForSpeech.replace(/\*\*/g, "");
-      
-      // Remove bracketed sounds like [laughter], [sighs] for TTS (they're visual indicators)
-      textForSpeech = textForSpeech.replace(/\[[^\]]+\]/g, "");
-      
-      // Handle hesitations: replace em dashes and ellipses with pauses
-      // Em dash (—) - add a longer pause by inserting a comma and space
-      textForSpeech = textForSpeech.replace(/—/g, ", ");
-      // Ellipses (...) - add a pause
-      textForSpeech = textForSpeech.replace(/\.\.\./g, "... ");
-      
-      // Handle song symbol (♪) - remove it
-      textForSpeech = textForSpeech.replace(/♪/g, "");
-      
-      // Capitalization emphasis is kept - TTS will naturally emphasize capitalized words
-      
-      const utterance = new SpeechSynthesisUtterance(textForSpeech);
-      currentUtteranceRef.current = utterance;
+      const cleanedText = cleanTextForTTS(text);
+
+      const result = await generateVoiceAudio({
+        text: cleanedText,
+        speaker: figureName,
+      });
+
+      if (!result.success || !result.audioBlob) {
+        console.error("[ChatPage] Voice cloning failed:", result.error);
+        setIsTTSPlaying(false);
+        return;
+      }
+
+      console.log(`[ChatPage] Audio generated successfully. Generation time: ${result.generationTime}s`);
+
       setIsTTSPlaying(true);
-      
-      utterance.onend = () => {
-        setIsTTSPlaying(false);
-        currentUtteranceRef.current = null;
-        resolve();
-      };
-      
-      utterance.onerror = () => {
-        setIsTTSPlaying(false);
-        currentUtteranceRef.current = null;
-        resolve();
-      };
-      
-      window.speechSynthesis.speak(utterance);
-    });
+      await playAudio(result.audioBlob);
+      setIsTTSPlaying(false);
+
+    } catch (error) {
+      console.error("[ChatPage] Error in speakText:", error);
+      setIsTTSPlaying(false);
+    }
   };
 
   // Auto-scroll to bottom when messages change (only if transcript is visible)
@@ -476,7 +466,11 @@ export default function ChatPage() {
             }}
           >
             {messages.map((message, index) => (
-              <MessageBubble key={index} message={message} figureName={figureName} />
+              <MessageBubble
+                key={index}
+                message={message}
+                figureName={figureName}
+              />
             ))}
             {streamingMessage && (
               <MessageBubble

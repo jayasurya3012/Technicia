@@ -5,18 +5,22 @@ A Next.js application that allows you to chat with historical figures using AI. 
 ## Features
 
 - Chat with any historical figure using AI-powered conversations
+- **Custom Voice Cloning** - Realistic, character-specific voices using XTTS + Bark
 - Voice-first interface with text-to-speech
 - Speech-to-text input support
 - Historical figure validation
 - Wikipedia image integration
 - Multi-language support
 - Natural speech elements (hesitations, sounds, emphasis)
+- Toggle between voice cloning and browser TTS
 
 ## Prerequisites
 
 - Node.js 18+ installed
 - npm or yarn package manager
 - A Groq API key (free at [console.groq.com](https://console.groq.com))
+- **(Optional)** Python 3.8+ for voice cloning server
+- **(Optional)** CUDA-compatible GPU for faster voice generation
 
 ## Quick Start
 
@@ -32,19 +36,33 @@ A Next.js application that allows you to chat with historical figures using AI. 
    ```
 
 3. **Set up environment variables**
-   
+
    Create a `.env.local` file in the root directory:
    ```env
    GROQ_API_KEY=your_groq_api_key_here
+   VOICE_SERVER_URL=http://localhost:8000
    ```
 
-4. **Run the development server**
+4. **(Optional) Set up Voice Cloning Server**
+
+   See [VOICE_CLONING_SETUP.md](VOICE_CLONING_SETUP.md) for detailed instructions.
+
+   Quick setup:
+   ```bash
+   # Install Python dependencies
+   pip install fastapi uvicorn TTS bark soundfile torch
+
+   # Start the voice server
+   python voice_clone_server.py
+   ```
+
+5. **Run the development server**
    ```bash
    npm run dev
    ```
 
-5. **Open your browser**
-   
+6. **Open your browser**
+
    Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## Project Structure
@@ -53,10 +71,16 @@ A Next.js application that allows you to chat with historical figures using AI. 
 chronos-guru/
 ├── app/                    # Next.js app directory
 │   ├── api/               # API routes
+│   │   ├── chat/          # Chat endpoint
+│   │   ├── voice/         # Voice cloning proxy
+│   │   └── validate-figure/ # Figure validation
 │   ├── chat/              # Chat interface pages
 │   └── page.tsx           # Landing page
 ├── components/             # React components
 ├── lib/                    # Utility functions
+│   ├── voiceCloning.ts    # Voice cloning utilities
+│   ├── prompts.ts         # AI prompts
+│   └── groq.ts            # Groq API client
 └── public/                 # Static assets
 ```
 
@@ -65,7 +89,9 @@ chronos-guru/
 - **Framework:** Next.js 16 (App Router)
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS
-- **AI:** Groq API (Llama 3.3 70B)
+- **AI Chat:** Groq API (Llama 3.3 70B)
+- **Voice Cloning:** Coqui XTTS v2 + Bark
+- **Backend:** FastAPI (Python) for voice server
 - **Deployment:** Vercel-ready
 
 ## Getting a Groq API Key
@@ -80,9 +106,29 @@ chronos-guru/
 
 1. Enter a historical figure's name on the landing page
 2. Wait for the character's greeting (voice will play automatically)
-3. Ask questions or use voice input to chat
-4. Click "Show Transcript" to view the conversation history
-5. The character will respond in the same language as your input
+3. Use the **🎤/🔊 toggle** to switch between voice cloning and browser TTS
+4. Ask questions or use voice input to chat
+5. Click **"🔊 Read aloud"** on any message to hear it again
+6. Click **"Show Transcript"** to view the conversation history
+7. The character will respond in the same language as your input
+
+## Voice Cloning
+
+This project includes a custom voice cloning integration that allows each historical figure to have their own unique voice.
+
+### Features:
+- **Character-specific voices** using voice reference files
+- **Toggle between modes** - Voice cloning or browser TTS
+- **Automatic fallback** - Uses browser TTS if server is unavailable
+- **GPU acceleration** - Faster generation with CUDA-compatible GPUs
+
+### Setup:
+See [VOICE_CLONING_SETUP.md](VOICE_CLONING_SETUP.md) for complete instructions.
+
+### Quick Start:
+1. Start the voice server: `python voice_clone_server.py`
+2. Start the Next.js app: `npm run dev`
+3. Enable voice cloning with the 🎤 button in the chat interface
 
 ## Deployment
 
