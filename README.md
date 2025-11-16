@@ -140,13 +140,13 @@ This project is configured for Vercel deployment:
 4. Deploy
 
 # Screenshots and Voices of John F. Kennedy for the below messages:
-This is the landing page of our website. Here you can choose any Histrorical figure and talk with them. Some suggested Histrorical figures are mentioned below.
+**This is the landing page of our website. Here you can choose any Histrorical figure and talk with them. Some suggested Histrorical figures are mentioned below.**
 ![Landing](https://github.com/user-attachments/assets/80b827b9-b2c7-44ff-9bdf-2e281285d52f)
 
 <br>
 
 
-Here we are going to talk with John F Kennedy. 
+**Here we are going to talk with John F Kennedy.**
 ![JFK](https://github.com/user-attachments/assets/e9061d9f-7138-4b5c-8b01-ff2391a264f4)
 
 Introduction:
@@ -155,7 +155,7 @@ Introduction:
 
 <br>
 
-Here I am asking about his biggest achievements.
+**Here I am asking about his biggest achievements.**
 <img width="1903" height="907" alt="Screenshot 2025-11-16 091218" src="https://github.com/user-attachments/assets/3d726f09-003d-417e-823f-30ce035f32d0" />
 
 Achievements:
