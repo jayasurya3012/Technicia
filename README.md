@@ -22,7 +22,7 @@ A Next.js application that allows you to chat with historical figures using AI. 
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/amaan-1234/Technicia.git
+   git clone https://github.com/jayasurya3012/Technicia.git
    cd Technicia/chronos-guru
    ```
 
