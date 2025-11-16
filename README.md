@@ -139,6 +139,15 @@ This project is configured for Vercel deployment:
 3. Add `GROQ_API_KEY` as an environment variable
 4. Deploy
 
+# Screenshots
+
+![Landing](https://github.com/user-attachments/assets/80b827b9-b2c7-44ff-9bdf-2e281285d52f)
+
+![JFK](https://github.com/user-attachments/assets/e9061d9f-7138-4b5c-8b01-ff2391a264f4)
+
+![JFK_Chat](https://github.com/user-attachments/assets/00fc9404-a9f3-4962-871d-423432cdc541)
+
+
 ## License
 
 Private project - All rights reserved
