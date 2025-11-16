@@ -145,7 +145,7 @@ This project is configured for Vercel deployment:
 
 ![JFK](https://github.com/user-attachments/assets/e9061d9f-7138-4b5c-8b01-ff2391a264f4)
 
-![JFK_Chat](https://github.com/user-attachments/assets/00fc9404-a9f3-4962-871d-423432cdc541)
+<img width="1903" height="907" alt="Screenshot 2025-11-16 091218" src="https://github.com/user-attachments/assets/3d726f09-003d-417e-823f-30ce035f32d0" />
 
 
 ## License
